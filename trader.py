@@ -1,4 +1,4 @@
-from config import TradingConfig, FLIP_THRESHOLD, SAFETY_MARGIN, COOLDOWN
+from config import TradingConfig, FLIP_THRESHOLD, FLIP_THRESHOLD_RATIO, SAFETY_MARGIN, COOLDOWN
 from exchange_client import ExchangeClient
 from order_tracker import OrderTracker, OrderThrottler
 from risk_manager import AdvancedRiskManager
@@ -105,7 +105,7 @@ class GridTrader:
                 f"交易对: {self.config.SYMBOL}\n"
                 f"基准价: {self.base_price} USDT\n"
                 f"网格大小: {self.grid_size}%\n"
-                f"触发阈值: {threshold * 100}% (网格大小的1/5)"
+                f"触发阈值: {threshold * 100}% (网格大小的1/{FLIP_THRESHOLD_RATIO})"
             )
 
             # 添加市场价对比
@@ -150,7 +150,7 @@ class GridTrader:
     def _reset_extremes(self):
         """
         清空上一轮监测记录的最高价 / 最低价，防止残留值
-        引发虚假“反弹/回撤”判定
+        引发虚假"反弹/回撤"判定
         """
         if self.highest is not None or self.lowest is not None:
             self.logger.debug(
@@ -226,13 +226,14 @@ class GridTrader:
             # 只在最低价更新时打印日志
             if new_lowest != self.lowest:
                 self.lowest = new_lowest
+                threshold = FLIP_THRESHOLD(self.grid_size)
                 self.logger.info(
                     f"买入监测 | "
                     f"当前价: {current_price:.2f} | "
                     f"触发价: {self._get_lower_band():.5f} | "
                     f"最低价: {self.lowest:.2f} | "
                     f"网格下限: {self._get_lower_band():.2f} | "
-                    f"反弹阈值: {FLIP_THRESHOLD(self.grid_size) * 100:.2f}%"
+                    f"反弹阈值: {threshold * 100:.2f}%"
                 )
             threshold = FLIP_THRESHOLD(self.grid_size)
             # 从最低价反弹指定比例时触发买入
@@ -252,7 +253,6 @@ class GridTrader:
     async def _check_sell_signal(self):
         current_price = self.current_price
         initial_upper_band = self._get_upper_band()  # 初始上轨价格
-
         if current_price >= initial_upper_band:
             self.buying_or_selling = True  # 进入买入或卖出监测
             # 记录最高价
@@ -272,7 +272,8 @@ class GridTrader:
                     f"卖出监测 | "
                     f"当前价: {current_price:.2f} | "
                     f"触发价(动态): {dynamic_trigger_price:.5f} | "
-                    f"最高价: {self.highest:.2f}"
+                    f"最高价: {self.highest:.2f} | "
+                    f"回调阈值: {threshold * 100:.2f}%"
                 )
 
             # 从最高价下跌指定比例时触发卖出
