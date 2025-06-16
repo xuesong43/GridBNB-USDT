@@ -6,7 +6,7 @@ load_dotenv()
 
 SYMBOL = 'BNB/USDT'
 INITIAL_GRID = 2.0
-FLIP_THRESHOLD_RATIO = 5  # 新增：触发阈值比例，网格大小的1/5
+FLIP_THRESHOLD_RATIO = 6  # 新增：触发阈值比例，网格大小的1/6
 FLIP_THRESHOLD = lambda grid_size: (grid_size / FLIP_THRESHOLD_RATIO) / 100  # 网格大小的1/FLIP_THRESHOLD_RATIO的1%
 POSITION_SCALE_FACTOR = 0.2  # 仓位调整系数（20%）
 MIN_TRADE_AMOUNT = 20.0  # 新下限
@@ -57,8 +57,8 @@ class TradingConfig:
         'max': 4.0,
         'volatility_threshold': {
             'ranges': [
-                {'range': [0, 0.20], 'grid': 1.0},     # 波动率 0-20%，网格1.0%
-                {'range': [0.20, 0.40], 'grid': 1.2},  # 波动率 20-40%，网格1.2%（从1.5%改为1.2%）
+                {'range': [0, 0.20], 'grid': 0.8},     # 波动率 0-20%，网格0.8%
+                {'range': [0.20, 0.40], 'grid': 1.0},  # 波动率 20-40%，网格1.0%（从1.5%改为1.0%）
                 {'range': [0.40, 0.60], 'grid': 1.5},  # 波动率 40-60%，网格1.5%（从2.0%改为1.5%）
                 {'range': [0.60, 0.80], 'grid': 2.0},  # 波动率 60-80%，网格2.0%（从2.5%改为2.0%）
                 {'range': [0.80, 1.00], 'grid': 2.5},  # 波动率 80-100%，网格2.5%（从3.0%改为2.5%）
