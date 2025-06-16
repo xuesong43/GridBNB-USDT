@@ -17,6 +17,7 @@ from position_controller_s1 import PositionControllerS1
 class GridTrader:
     def __init__(self, exchange, config):
         """初始化网格交易器"""
+        self.start_time = time.time()
         self.exchange = exchange
         self.config = config
         self.symbol = config.SYMBOL

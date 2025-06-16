@@ -5,7 +5,7 @@ import logging
 load_dotenv()
 
 SYMBOL = 'BNB/USDT'
-INITIAL_GRID = 2.0
+INITIAL_GRID = 1.0
 FLIP_THRESHOLD_RATIO = 6  # 新增：触发阈值比例，网格大小的1/6
 FLIP_THRESHOLD = lambda grid_size: (grid_size / FLIP_THRESHOLD_RATIO) / 100  # 网格大小的1/FLIP_THRESHOLD_RATIO的1%
 POSITION_SCALE_FACTOR = 0.2  # 仓位调整系数（20%）
