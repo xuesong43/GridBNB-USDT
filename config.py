@@ -6,7 +6,7 @@ load_dotenv()
 
 SYMBOL = 'BNB/USDT'
 INITIAL_GRID = 1.0
-FLIP_THRESHOLD = lambda grid_size, volatility, side='buy': grid_size / TradingConfig.get_flip_threshold_ratio(volatility, side)
+FLIP_THRESHOLD = lambda grid_size, volatility, side='buy': (grid_size / TradingConfig.get_flip_threshold_ratio(volatility, side)) / 100  # 根据波动率动态计算阈值
 POSITION_SCALE_FACTOR = 0.2  # 仓位调整系数（20%）
 MIN_TRADE_AMOUNT = 20.0  # 新下限
 MIN_POSITION_PERCENT = 0.05  # 最小交易比例（总资产的5%）
@@ -79,7 +79,7 @@ class TradingConfig:
         
         for range_config in cls.FLIP_THRESHOLD_PARAMS['ranges']:
             if range_config['range'][0] <= volatility < range_config['range'][1]:
-                return range_config[ratio_key] / 100
+                return range_config[ratio_key]
         return default_ratio
     
     GRID_PARAMS = {
