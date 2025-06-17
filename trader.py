@@ -1,4 +1,4 @@
-from config import TradingConfig, FLIP_THRESHOLD, FLIP_THRESHOLD_RATIO, SAFETY_MARGIN, COOLDOWN
+from config import TradingConfig, FLIP_THRESHOLD, SAFETY_MARGIN, COOLDOWN
 from exchange_client import ExchangeClient
 from order_tracker import OrderTracker, OrderThrottler
 from risk_manager import AdvancedRiskManager
@@ -100,13 +100,17 @@ class GridTrader:
             self.logger.info(f"初始化完成 | 交易对: {self.config.SYMBOL} | 基准价: {self.base_price}")
 
             # 发送启动通知
-            threshold = FLIP_THRESHOLD(self.grid_size)  # 计算实际阈值
+            buy_threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='buy')
+            sell_threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='sell')
+            buy_trigger_price = self.base_price * (1 - buy_threshold)
+            sell_trigger_price = self.base_price * (1 + sell_threshold)
             send_pushplus_message(
                 f"网格交易启动成功\n"
                 f"交易对: {self.config.SYMBOL}\n"
                 f"基准价: {self.base_price} USDT\n"
                 f"网格大小: {self.grid_size}%\n"
-                f"触发阈值: {threshold * 100}% (网格大小的1/{FLIP_THRESHOLD_RATIO})"
+                f"买入阈值: {buy_threshold * 100}% (触发价: {buy_trigger_price:.4f} USDT)\n"
+                f"卖出阈值: {sell_threshold * 100}% (触发价: {sell_trigger_price:.4f} USDT)"
             )
 
             # 添加市场价对比
