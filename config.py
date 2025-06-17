@@ -6,8 +6,7 @@ load_dotenv()
 
 SYMBOL = 'BNB/USDT'
 INITIAL_GRID = 1.0
-FLIP_THRESHOLD_RATIO = 6  # 新增：触发阈值比例，网格大小的1/6
-FLIP_THRESHOLD = lambda grid_size: (grid_size / FLIP_THRESHOLD_RATIO) / 100  # 网格大小的1/FLIP_THRESHOLD_RATIO的1%
+FLIP_THRESHOLD = lambda grid_size, volatility: (grid_size / TradingConfig.get_flip_threshold_ratio(volatility)) / 100  # 根据波动率动态计算阈值
 POSITION_SCALE_FACTOR = 0.2  # 仓位调整系数（20%）
 MIN_TRADE_AMOUNT = 20.0  # 新下限
 MIN_POSITION_PERCENT = 0.05  # 最小交易比例（总资产的5%）
@@ -51,16 +50,44 @@ class TradingConfig:
         'daily_loss_limit': DAILY_LOSS_LIMIT,
         'position_limit': MAX_POSITION_RATIO
     }
+    
+    # 添加动态翻转阈值配置
+    FLIP_THRESHOLD_PARAMS = {
+        'ranges': [
+            {'range': [0, 0.20], 'ratio': 9.0},    # 波动率 0-20%，阈值比例9.0（更容易触发）
+            {'range': [0.20, 0.40], 'ratio': 8.0},  # 波动率 20-40%，阈值比例8.0
+            {'range': [0.40, 0.60], 'ratio': 7.0},  # 波动率 40-60%，阈值比例7.0
+            {'range': [0.60, 0.80], 'ratio': 6.0},  # 波动率 60-80%，阈值比例6.0
+            {'range': [0.80, 1.00], 'ratio': 5.0},  # 波动率 80-100%，阈值比例5.0
+            {'range': [1.00, 1.20], 'ratio': 4.0},  # 波动率 100-120%，阈值比例4.0
+            {'range': [1.20, 999], 'ratio': 3.0}    # 波动率 >120%，阈值比例3.0
+        ],
+        'default_ratio': 8.0  # 默认阈值比例
+    }
+    
+    
+    @classmethod
+    def get_flip_threshold_ratio(cls, volatility):
+        """
+        根据波动率获取对应的翻转阈值比例
+        :param volatility: 当前波动率
+        :return: 对应的阈值比例
+        """
+        for range_config in cls.FLIP_THRESHOLD_PARAMS['ranges']:
+            if range_config['range'][0] <= volatility < range_config['range'][1]:
+                return range_config['ratio']
+        return cls.FLIP_THRESHOLD_PARAMS['default_ratio']
+    
     GRID_PARAMS = {
         'initial': INITIAL_GRID,
-        'min': 1.0,
+        'min': 0.8,
         'max': 4.0,
         'volatility_threshold': {
             'ranges': [
                 {'range': [0, 0.20], 'grid': 0.8},     # 波动率 0-20%，网格0.8%
                 {'range': [0.20, 0.40], 'grid': 1.0},  # 波动率 20-40%，网格1.0%（从1.5%改为1.0%）
-                {'range': [0.40, 0.60], 'grid': 1.5},  # 波动率 40-60%，网格1.5%（从2.0%改为1.5%）
-                {'range': [0.60, 0.80], 'grid': 2.0},  # 波动率 60-80%，网格2.0%（从2.5%改为2.0%）
+                {'range': [0.40, 0.60], 'grid': 1.4},  # 波动率 40-60%，网格1.5%（从2.0%改为1.5%）
+                {'range': [0.60, 0.80], 'grid': 1.8},  # 波动率 60-80%，网格2.0%（从2.5%改为1.8%）
                 {'range': [0.80, 1.00], 'grid': 2.5},  # 波动率 80-100%，网格2.5%（从3.0%改为2.5%）
                 {'range': [1.00, 1.20], 'grid': 3.0},  # 波动率 100-120%，网格3.0%（从3.5%改为3.0%）
                 {'range': [1.20, 999], 'grid': 3.5}    # 波动率 >120%，网格3.5%（从4.0%改为3.5%）
