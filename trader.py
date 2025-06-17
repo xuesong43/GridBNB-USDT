@@ -227,7 +227,7 @@ class GridTrader:
             # 只在最低价更新时打印日志
             if new_lowest != self.lowest:
                 self.lowest = new_lowest
-                threshold = FLIP_THRESHOLD(self.grid_size)
+                threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='buy')  # 使用买入阈值
                 self.logger.info(
                     f"买入监测 | "
                     f"当前价: {current_price:.2f} | "
@@ -236,7 +236,7 @@ class GridTrader:
                     f"网格下限: {self._get_lower_band():.2f} | "
                     f"反弹阈值: {threshold * 100:.2f}%"
                 )
-            threshold = FLIP_THRESHOLD(self.grid_size)
+            threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='buy')  # 使用买入阈值
             # 从最低价反弹指定比例时触发买入
             if self.lowest and current_price >= self.lowest * (1 + threshold):
                 self.buying_or_selling = False  # 不在买入或卖出
@@ -281,12 +281,12 @@ class GridTrader:
             )
 
             return False  # 不触发卖出信号
-       
+        
         if current_price >= initial_upper_band:
             self.buying_or_selling = True  # 进入买入或卖出监测
             # 记录最高价
             new_highest = current_price if self.highest is None else max(self.highest, current_price)
-            threshold = FLIP_THRESHOLD(self.grid_size)
+            threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='sell')  # 使用卖出阈值
 
             # 计算动态触发价格 (基于最高价的回调阈值)
             dynamic_trigger_price = new_highest * (1 - threshold) if new_highest is not None else initial_upper_band

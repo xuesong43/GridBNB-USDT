@@ -54,29 +54,33 @@ class TradingConfig:
     # 添加动态翻转阈值配置
     FLIP_THRESHOLD_PARAMS = {
         'ranges': [
-            {'range': [0, 0.20], 'ratio': 9.0},    # 波动率 0-20%，阈值比例9.0（更容易触发）
-            {'range': [0.20, 0.40], 'ratio': 8.0},  # 波动率 20-40%，阈值比例8.0
-            {'range': [0.40, 0.60], 'ratio': 7.0},  # 波动率 40-60%，阈值比例7.0
-            {'range': [0.60, 0.80], 'ratio': 6.0},  # 波动率 60-80%，阈值比例6.0
-            {'range': [0.80, 1.00], 'ratio': 5.0},  # 波动率 80-100%，阈值比例5.0
-            {'range': [1.00, 1.20], 'ratio': 4.0},  # 波动率 100-120%，阈值比例4.0
-            {'range': [1.20, 999], 'ratio': 3.0}    # 波动率 >120%，阈值比例3.0
+            {'range': [0, 0.20], 'buy_ratio': 6.0, 'sell_ratio': 9.0},    # 波动率 0-20%，买入阈值比例7.0，卖出阈值比例9.0
+            {'range': [0.20, 0.40], 'buy_ratio': 5.0, 'sell_ratio': 8.0},  # 波动率 20-40%，买入阈值比例6.0，卖出阈值比例8.0
+            {'range': [0.40, 0.60], 'buy_ratio': 4.0, 'sell_ratio': 7.0},  # 波动率 40-60%，买入阈值比例5.0，卖出阈值比例7.0
+            {'range': [0.60, 0.80], 'buy_ratio': 5.0, 'sell_ratio': 6.0},  # 波动率 60-80%，买入阈值比例4.0，卖出阈值比例6.0
+            {'range': [0.80, 1.00], 'buy_ratio': 2.0, 'sell_ratio': 5.0},  # 波动率 80-100%，买入阈值比例3.0，卖出阈值比例5.0
+            {'range': [1.00, 1.20], 'buy_ratio': 1.0, 'sell_ratio': 4.0},  # 波动率 100-120%，买入阈值比例2.0，卖出阈值比例4.0
+            {'range': [1.20, 999], 'buy_ratio': 0.8, 'sell_ratio': 3.0}    # 波动率 >120%，买入阈值比例1.0，卖出阈值比例3.0
         ],
-        'default_ratio': 8.0  # 默认阈值比例
+        'default_buy_ratio': 5.0,  # 默认买入阈值比例
+        'default_sell_ratio': 8.0  # 默认卖出阈值比例
     }
     
-    
     @classmethod
-    def get_flip_threshold_ratio(cls, volatility):
+    def get_flip_threshold_ratio(cls, volatility, side='buy'):
         """
-        根据波动率获取对应的翻转阈值比例
+        根据波动率和交易类型获取对应的翻转阈值比例
         :param volatility: 当前波动率
+        :param side: 交易方向，'buy' 或 'sell'
         :return: 对应的阈值比例
         """
+        ratio_key = f'{side}_ratio'
+        default_ratio = cls.FLIP_THRESHOLD_PARAMS[f'default_{ratio_key}']
+        
         for range_config in cls.FLIP_THRESHOLD_PARAMS['ranges']:
             if range_config['range'][0] <= volatility < range_config['range'][1]:
-                return range_config['ratio']
-        return cls.FLIP_THRESHOLD_PARAMS['default_ratio']
+                return range_config[ratio_key]
+        return default_ratio
     
     GRID_PARAMS = {
         'initial': INITIAL_GRID,
