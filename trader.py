@@ -102,15 +102,21 @@ class GridTrader:
             # 发送启动通知
             buy_threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='buy')
             sell_threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='sell')
-            buy_trigger_price = self.base_price * (1 - buy_threshold)
-            sell_trigger_price = self.base_price * (1 + sell_threshold)
+            # 计算网格上下限
+            upper_band = self._get_upper_band()
+            lower_band = self._get_lower_band()
+            # 计算触发价格（基于网格上下限的阈值）
+            buy_trigger_price = lower_band * (1 + buy_threshold)
+            sell_trigger_price = upper_band * (1 - sell_threshold)
             send_pushplus_message(
                 f"网格交易启动成功\n"
                 f"交易对: {self.config.SYMBOL}\n"
                 f"基准价: {self.base_price} USDT\n"
                 f"网格大小: {self.grid_size}%\n"
-                f"买入阈值: {buy_threshold * 100}% (触发价: {buy_trigger_price:.4f} USDT)\n"
-                f"卖出阈值: {sell_threshold * 100}% (触发价: {sell_trigger_price:.4f} USDT)"
+                f"网格上轨: {upper_band:.4f} USDT\n"
+                f"网格下轨: {lower_band:.4f} USDT\n"
+                f"买入阈值: {buy_threshold * 100:.2f}% (触发价: {buy_trigger_price:.4f} USDT)\n"
+                f"卖出阈值: {sell_threshold * 100:.2f}% (触发价: {sell_trigger_price:.4f} USDT)"
             )
 
             # 添加市场价对比
