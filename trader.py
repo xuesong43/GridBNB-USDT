@@ -230,20 +230,29 @@ class GridTrader:
 
     async def _check_buy_signal(self):
         current_price = self.current_price
-        if current_price <= self._get_lower_band():
+        initial_lower_band = self._get_lower_band()  # 初始下轨价格
+        
+        if current_price <= initial_lower_band:
             self.buying_or_selling = True  # 进入买入或卖出监测
             # 记录最低价
             new_lowest = current_price if self.lowest is None else min(self.lowest, current_price)
+            
+            # 添加调试日志，查看变量值
+            self.logger.info(f"买入监测调试 | 当前价: {current_price:.2f} | 下轨: {initial_lower_band:.2f} | self.lowest: {self.lowest} | new_lowest: {new_lowest:.2f} | 是否更新: {new_lowest != self.lowest}")
+            
             # 只在最低价更新时打印日志
             if new_lowest != self.lowest:
                 self.lowest = new_lowest
                 threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='buy')  # 使用买入阈值
+                
+                # 计算动态触发价格 (基于最低价的反弹阈值)
+                dynamic_trigger_price = self.lowest * (1 + threshold)
+                
                 self.logger.info(
                     f"买入监测 | "
                     f"当前价: {current_price:.2f} | "
-                    f"触发价: {self._get_lower_band():.5f} | "
+                    f"触发价(动态): {dynamic_trigger_price:.5f} | "
                     f"最低价: {self.lowest:.2f} | "
-                    f"网格下限: {self._get_lower_band():.2f} | "
                     f"反弹阈值: {threshold * 100:.2f}%"
                 )
             threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='buy')  # 使用买入阈值
