@@ -484,8 +484,8 @@ async def handle_log(request):
                     
                     // 更新显示
                     statusText.textContent = status;
-                    statusContainer.className = `mb-4 p-3 rounded-lg border ${statusClass}`;
-                    statusIndicator.className = `w-2.5 h-2.5 rounded-full animate-pulse ${indicatorClass}`;
+                    statusContainer.className = `mb-4 p-3 rounded-lg border ${{statusClass}}`;
+                    statusIndicator.className = `w-2.5 h-2.5 rounded-full animate-pulse ${{indicatorClass}}`;
                 }}
 
                 // 每2秒更新一次状态
@@ -526,6 +526,8 @@ async def handle_status(request):
         # 计算触发价格
         buy_trigger_price = None
         sell_trigger_price = None
+        upper_band = None
+        lower_band = None
         if trader.base_price is not None:
             # 买入触发价 = 下轨 * (1 + 买入阈值)
             lower_band = trader._get_lower_band()
