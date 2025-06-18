@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 import psutil
 import time
+from config import FLIP_THRESHOLD
 
 class IPLogger:
     def __init__(self):
@@ -106,6 +107,8 @@ async def handle_log(request):
                 }}
                 .profit {{ color: #10b981; }}
                 .loss {{ color: #ef4444; }}
+                .buy {{ color: #10b981; }}
+                .sell {{ color: #ef4444; }}
                 .log-container {{
                     height: calc(100vh - 400px);
                     overflow-y: auto;
@@ -168,8 +171,20 @@ async def handle_log(request):
                                 <span class="status-value" id="grid-lower-band">--</span>
                             </div>    
                             <div class="flex justify-between">
-                                <span>触发阈值</span>
-                                <span class="status-value" id="threshold">--</span>
+                                <span>买入阈值</span>
+                                <span class="status-value" id="buy-threshold">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>买入触发价 (USDT)</span>
+                                <span class="status-value" id="buy-trigger-price">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>卖出阈值</span>
+                                <span class="status-value" id="sell-threshold">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>卖出触发价 (USDT)</span>
+                                <span class="status-value" id="sell-trigger-price">--</span>
                             </div>
                             <div class="flex justify-between">
                                 <span>目标委托金额</span>
@@ -312,8 +327,18 @@ async def handle_log(request):
                         // 更新网格参数
                         document.querySelector('#grid-size').textContent = 
                             data.grid_size ? (data.grid_size * 100).toFixed(2) + '%' : '--';
-                        document.querySelector('#threshold').textContent = 
-                            data.threshold ? (data.threshold * 100).toFixed(2) + '%' : '--';
+                        
+                        // 更新买入阈值（绿色）
+                        const buyThresholdElement = document.querySelector('#buy-threshold');
+                        buyThresholdElement.textContent = 
+                            data.buy_threshold ? (data.buy_threshold * 100).toFixed(2) + '%' : '--';
+                        buyThresholdElement.className = 'status-value buy';
+                        
+                        // 更新卖出阈值（红色）
+                        const sellThresholdElement = document.querySelector('#sell-threshold');
+                        sellThresholdElement.textContent = 
+                            data.sell_threshold ? (data.sell_threshold * 100).toFixed(2) + '%' : '--';
+                        sellThresholdElement.className = 'status-value sell';
 
                         // ---> 新增：更新网格上下轨 <---
                         document.querySelector('#grid-upper-band').textContent =
@@ -358,6 +383,17 @@ async def handle_log(request):
                         // 更新系统运行时间
                         document.querySelector('#system-uptime').textContent = data.uptime;
                         
+                        // 更新买入触发价和卖出触发价
+                        const buyTriggerElement = document.querySelector('#buy-trigger-price');
+                        buyTriggerElement.textContent = 
+                            data.buy_trigger_price ? data.buy_trigger_price.toFixed(2) : '--';
+                        buyTriggerElement.className = 'status-value buy';
+                        
+                        const sellTriggerElement = document.querySelector('#sell-trigger-price');
+                        sellTriggerElement.textContent = 
+                            data.sell_trigger_price ? data.sell_trigger_price.toFixed(2) : '--';
+                        sellTriggerElement.className = 'status-value sell';
+                        
                         console.log('状态更新成功:', data);
                     }} catch (error) {{
                         console.error('更新状态失败:', error);
@@ -393,19 +429,23 @@ async def handle_status(request):
         # 获取网格参数
         grid_size = trader.grid_size
         grid_size_decimal = grid_size / 100 if grid_size else 0
-        threshold = grid_size_decimal / 5
         
-        # ---> 新增：计算网格上下轨 <---
-        # 确保 trader.base_price 和 trader.grid_size 是有效的
-        upper_band = None
-        lower_band = None
-        if trader.base_price is not None and trader.grid_size is not None:
-             try:
-                 # 调用 trader.py 中已有的方法
-                 upper_band = trader._get_upper_band()
-                 lower_band = trader._get_lower_band()
-             except Exception as band_e:
-                 logging.warning(f"计算网格上下轨失败: {band_e}")
+        # 计算买入和卖出阈值
+        volatility = await trader._calculate_volatility()
+        buy_threshold = FLIP_THRESHOLD(grid_size, volatility, side='buy')
+        sell_threshold = FLIP_THRESHOLD(grid_size, volatility, side='sell')
+        
+        # 计算触发价格
+        buy_trigger_price = None
+        sell_trigger_price = None
+        if trader.base_price is not None:
+            # 买入触发价 = 下轨 * (1 + 买入阈值)
+            lower_band = trader._get_lower_band()
+            buy_trigger_price = lower_band * (1 + buy_threshold)
+            
+            # 卖出触发价 = 上轨 * (1 - 卖出阈值)
+            upper_band = trader._get_upper_band()
+            sell_trigger_price = upper_band * (1 - sell_threshold)
         
         # 计算系统运行时间
         current_time = time.time()
@@ -463,7 +503,10 @@ async def handle_status(request):
             "base_price": trader.base_price,
             "current_price": current_price,
             "grid_size": grid_size_decimal,
-            "threshold": threshold,
+            "buy_threshold": buy_threshold,
+            "sell_threshold": sell_threshold,
+            "buy_trigger_price": buy_trigger_price,
+            "sell_trigger_price": sell_trigger_price,
             "total_assets": total_assets,
             "usdt_balance": usdt_balance,
             "bnb_balance": bnb_balance,
