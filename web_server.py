@@ -119,27 +119,27 @@ async def handle_log(request):
                 }}
                 /* 交易状态样式 */
                 .status-waiting {{
-                    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-                    border-color: #d1d5db;
-                    color: #374151;
+                    background: #f8fafc;
+                    border-color: #e2e8f0;
+                    color: #475569;
                 }}
                 .status-buy-ready {{
-                    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-                    border-color: #10b981;
-                    color: #065f46;
+                    background: #f0fdf4;
+                    border-color: #bbf7d0;
+                    color: #166534;
                 }}
                 .status-sell-ready {{
-                    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-                    border-color: #ef4444;
+                    background: #fef2f2;
+                    border-color: #fecaca;
                     color: #991b1b;
                 }}
                 .status-executing {{
-                    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                    border-color: #3b82f6;
+                    background: #eff6ff;
+                    border-color: #bfdbfe;
                     color: #1e40af;
                 }}
-                .indicator-waiting {{ background-color: #6b7280; }}
-                .indicator-buy-ready {{ background-color: #10b981; }}
+                .indicator-waiting {{ background-color: #94a3b8; }}
+                .indicator-buy-ready {{ background-color: #22c55e; }}
                 .indicator-sell-ready {{ background-color: #ef4444; }}
                 .indicator-executing {{ background-color: #3b82f6; }}
             </style>
@@ -154,12 +154,12 @@ async def handle_log(request):
                         <h2 class="text-lg font-semibold mb-4">基本信息 & S1</h2>
                         
                         <!-- 交易状态指示器 -->
-                        <div class="mb-4 p-3 rounded-lg border-2" id="trading-status-container">
+                        <div class="mb-4 p-3 rounded-lg border" id="trading-status-container">
                             <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-600">交易状态</span>
+                                <span class="text-sm font-medium">交易状态</span>
                                 <div class="flex items-center space-x-2">
-                                    <div class="w-3 h-3 rounded-full animate-pulse" id="status-indicator"></div>
-                                    <span class="font-bold text-lg" id="trading-status">--</span>
+                                    <div class="w-2.5 h-2.5 rounded-full animate-pulse" id="status-indicator"></div>
+                                    <span class="font-semibold text-base" id="trading-status">--</span>
                                 </div>
                             </div>
                         </div>
@@ -448,8 +448,8 @@ async def handle_log(request):
                     
                     if (!data.current_price || !data.buy_trigger_price || !data.sell_trigger_price) {{
                         statusText.textContent = '初始化中';
-                        statusContainer.className = 'mb-4 p-3 rounded-lg border-2 status-waiting';
-                        statusIndicator.className = 'w-3 h-3 rounded-full animate-pulse indicator-waiting';
+                        statusContainer.className = 'mb-4 p-3 rounded-lg border status-waiting';
+                        statusIndicator.className = 'w-2.5 h-2.5 rounded-full animate-pulse indicator-waiting';
                         return;
                     }}
                     
@@ -476,8 +476,8 @@ async def handle_log(request):
                     
                     // 更新显示
                     statusText.textContent = status;
-                    statusContainer.className = `mb-4 p-3 rounded-lg border-2 ${{statusClass}}`;
-                    statusIndicator.className = `w-3 h-3 rounded-full animate-pulse ${{indicatorClass}}`;
+                    statusContainer.className = `mb-4 p-3 rounded-lg border ${{statusClass}}`;
+                    statusIndicator.className = `w-2.5 h-2.5 rounded-full animate-pulse ${{indicatorClass}}`;
                 }}
 
                 // 每2秒更新一次状态
