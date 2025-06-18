@@ -298,10 +298,10 @@ class GridTrader:
             new_highest = current_price if self.highest is None else max(self.highest, current_price)
             threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='sell')  # 使用卖出阈值
 
-            # 计算动态触发价格 (基于最高价的回调阈值)
-            dynamic_trigger_price = new_highest * (1 - threshold) if new_highest is not None else initial_upper_band
+            # 添加调试日志，查看变量值
+            self.logger.info(f"卖出监测调试 | 当前价: {current_price:.2f} | 上轨: {initial_upper_band:.2f} | self.highest: {self.highest} | new_highest: {new_highest:.2f} | 是否更新: {new_highest != self.highest}")
 
-            # 只在最高价更新时打印日志
+            # 只在最高价更新时打印日志和重新计算触发价格
             if new_highest != self.highest:
                 self.highest = new_highest
                 # 重新计算动态触发价，基于更新后的最高价
