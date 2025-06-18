@@ -454,21 +454,29 @@ async def handle_log(request):
                     }}
                     
                     const currentPrice = data.current_price;
-                    const buyTrigger = data.buy_trigger_price;
-                    const sellTrigger = data.sell_trigger_price;
+                    const buyingOrSelling = data.buying_or_selling;
+                    const highest = data.highest;
+                    const lowest = data.lowest;
+                    const buyThreshold = data.buy_threshold;
+                    const sellThreshold = data.sell_threshold;
                     
-                    // 判断交易状态
+                    // 判断交易状态 - 显示等待状态
                     let status, statusClass, indicatorClass;
                     
-                    if (currentPrice <= buyTrigger) {{
-                        status = '准备买入';
+                    // 检查是否在买入等待状态（价格低于下轨，正在监测最低价）
+                    if (buyingOrSelling && lowest && currentPrice < lowest * (1 + buyThreshold)) {{
+                        status = '买入检测';
                         statusClass = 'status-buy-ready';
                         indicatorClass = 'indicator-buy-ready';
-                    }} else if (currentPrice >= sellTrigger) {{
-                        status = '准备卖出';
+                    }}
+                    // 检查是否在卖出等待状态（价格高于上轨，正在监测最高价）
+                    else if (buyingOrSelling && highest && currentPrice > highest * (1 - sellThreshold)) {{
+                        status = '卖出检测';
                         statusClass = 'status-sell-ready';
                         indicatorClass = 'indicator-sell-ready';
-                    }} else {{
+                    }}
+                    // 默认等待状态
+                    else {{
                         status = '等待中';
                         statusClass = 'status-waiting';
                         indicatorClass = 'indicator-waiting';
@@ -476,8 +484,8 @@ async def handle_log(request):
                     
                     // 更新显示
                     statusText.textContent = status;
-                    statusContainer.className = `mb-4 p-3 rounded-lg border ${{statusClass}}`;
-                    statusIndicator.className = `w-2.5 h-2.5 rounded-full animate-pulse ${{indicatorClass}}`;
+                    statusContainer.className = `mb-4 p-3 rounded-lg border ${statusClass}`;
+                    statusIndicator.className = `w-2.5 h-2.5 rounded-full animate-pulse ${indicatorClass}`;
                 }}
 
                 // 每2秒更新一次状态
@@ -604,7 +612,11 @@ async def handle_status(request):
             "grid_upper_band": upper_band,
             "grid_lower_band": lower_band,
             "uptime": uptime_str, # 添加运行时间字符串
-            "uptime_seconds": uptime_seconds # 添加运行时间秒数用于计算
+            "uptime_seconds": uptime_seconds, # 添加运行时间秒数用于计算
+            # ---> 新增：添加交易状态相关字段 <---
+            "buying_or_selling": trader.buying_or_selling,
+            "highest": trader.highest,
+            "lowest": trader.lowest
         }
         
         return web.json_response(status)
