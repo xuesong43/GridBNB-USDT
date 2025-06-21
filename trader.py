@@ -236,10 +236,7 @@ class GridTrader:
             self.buying_or_selling = True  # 进入买入或卖出监测
             # 记录最低价
             new_lowest = current_price if self.lowest is None else min(self.lowest, current_price)
-            
-            # 添加调试日志，查看变量值
-            self.logger.info(f"买入监测调试 | 当前价: {current_price:.2f} | 下轨: {initial_lower_band:.2f} | self.lowest: {self.lowest} | new_lowest: {new_lowest:.2f} | 是否更新: {new_lowest != self.lowest}")
-            
+                    
             # 只在最低价更新时打印日志
             if new_lowest != self.lowest:
                 self.lowest = new_lowest
@@ -307,9 +304,6 @@ class GridTrader:
             # 记录最高价
             new_highest = current_price if self.highest is None else max(self.highest, current_price)
             threshold = FLIP_THRESHOLD(self.grid_size, await self._calculate_volatility(), side='sell')  # 使用卖出阈值
-
-            # 添加调试日志，查看变量值
-            self.logger.info(f"卖出监测调试 | 当前价: {current_price:.2f} | 上轨: {initial_upper_band:.2f} | self.highest: {self.highest} | new_highest: {new_highest:.2f} | 是否更新: {new_highest != self.highest}")
 
             # 只在最高价更新时打印日志和重新计算触发价格
             if new_highest != self.highest:
