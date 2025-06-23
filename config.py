@@ -54,7 +54,7 @@ class TradingConfig:
     # 添加动态翻转阈值配置
     FLIP_THRESHOLD_PARAMS = {
         'ranges': [
-            {'range': [0, 0.20], 'buy_ratio': 6.0, 'sell_ratio': 6.0},    # 波动率 0-20%，买入阈值比例5.0，卖出阈值比例6.0
+            {'range': [0, 0.20], 'buy_ratio': 6.0, 'sell_ratio': 6.0},    # 波动率 0-20%，买入阈值比例6.0，卖出阈值比例6.0
             {'range': [0.20, 0.40], 'buy_ratio': 5.0, 'sell_ratio': 5.0},  # 波动率 20-40%，买入阈值比例5.0，卖出阈值比例5.0
             {'range': [0.40, 0.60], 'buy_ratio': 3.5, 'sell_ratio': 4.5},  # 波动率 40-60%，买入阈值比例3.5，卖出阈值比例4.5
             {'range': [0.60, 0.80], 'buy_ratio': 3.0, 'sell_ratio': 4.0},  # 波动率 60-80%，买入阈值比例3.0，卖出阈值比例4.0

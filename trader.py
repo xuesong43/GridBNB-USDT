@@ -46,7 +46,7 @@ class GridTrader:
         self.MIN_TRADE_INTERVAL = 30  # 两次交易之间的最小间隔（秒）
         self.grid_params = {
             'base_size': 2.0,  # 基础网格大小
-            'min_size': 0.8,  # 最小网格
+            'min_size': 1.0,  # 最小网格
             'max_size': 4.0,  # 最大网格
             'adjust_step': 0.2  # 调整步长
         }
@@ -262,10 +262,12 @@ class GridTrader:
                 if not await self.check_buy_balance(current_price):
                     return False
                 return True
-        elif self.buying_or_selling and self.highest is None:
-            # 价格回到下轨之上，但我们仍在买入监测模式（说明没有进入卖出监测），重置
-            self.buying_or_selling = False
-            self._reset_extremes()
+        # elif self.buying_or_selling and self.highest is None:
+        #     # 价格回到下轨之上，但我们仍在买入监测模式（说明没有进入卖出监测），重置
+        #     self.buying_or_selling = False
+        #     self._reset_extremes()
+            else:
+                self.buying_or_selling = False    # 退出买入或卖出监测
         return False
 
     async def _check_sell_signal(self):
@@ -328,10 +330,12 @@ class GridTrader:
                 if not await self.check_sell_balance():
                     return False
                 return True
-        elif self.buying_or_selling and self.lowest is None:
-            # 价格回到上轨之下，但我们仍在卖出监测模式（说明没有进入买入监测），重置
-            self.buying_or_selling = False
-            self._reset_extremes()
+        # elif self.buying_or_selling and self.lowest is None:
+        #     # 价格回到上轨之下，但我们仍在卖出监测模式（说明没有进入买入监测），重置
+        #     self.buying_or_selling = False
+        #     self._reset_extremes()
+            else:
+                self.buying_or_selling = False    # 退出买入或卖出监测
         return False
 
     async def _calculate_order_amount(self, order_type):
