@@ -529,13 +529,23 @@ async def handle_status(request):
         upper_band = None
         lower_band = None
         if trader.base_price is not None:
-            # 买入触发价 = 下轨 * (1 + 买入阈值)
+            # 买入触发价计算 - 使用动态逻辑
             lower_band = trader._get_lower_band()
-            buy_trigger_price = lower_band * (1 + buy_threshold)
+            if trader.buying_or_selling and trader.lowest is not None:
+                # 如果正在监测买入信号，使用动态触发价（基于最低价）
+                buy_trigger_price = trader.lowest * (1 + buy_threshold)
+            else:
+                # 否则使用静态触发价（基于下轨）
+                buy_trigger_price = lower_band * (1 + buy_threshold)
             
-            # 卖出触发价 = 上轨 * (1 - 卖出阈值)
+            # 卖出触发价计算 - 使用动态逻辑
             upper_band = trader._get_upper_band()
-            sell_trigger_price = upper_band * (1 - sell_threshold)
+            if trader.buying_or_selling and trader.highest is not None:
+                # 如果正在监测卖出信号，使用动态触发价（基于最高价）
+                sell_trigger_price = trader.highest * (1 - sell_threshold)
+            else:
+                # 否则使用静态触发价（基于上轨）
+                sell_trigger_price = upper_band * (1 - sell_threshold)
         
         # 计算系统运行时间
         current_time = time.time()
