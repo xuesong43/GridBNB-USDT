@@ -61,6 +61,91 @@ class GridTrader:
         self.funding_cache_ttl = 60  # 理财余额缓存60秒
         self.position_controller_s1 = PositionControllerS1(self)
         self.buying_or_selling = False  # 不在等待买入或卖出
+        
+        # 状态持久化相关
+        self.data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+        self.state_file = os.path.join(self.data_dir, 'trader_state.json')
+        self.backup_state_file = os.path.join(self.data_dir, 'trader_state.backup.json')
+        
+        # 加载保存的状态
+        self.load_state()
+        
+        # 初始化状态保存时间戳
+        self._last_state_save = time.time()
+
+    def save_state(self):
+        """保存当前状态到文件"""
+        try:
+            state = {
+                'base_price': self.base_price,
+                'grid_size': self.grid_size,
+                'last_trade_time': self.last_trade_time,
+                'last_trade_price': self.last_trade_price,
+                'highest': self.highest,
+                'lowest': self.lowest,
+                'last_grid_adjust_time': self.last_grid_adjust_time,
+                'total_assets': self.total_assets,
+                'price_history': self.price_history[-100:],  # 只保存最近100个价格
+                'saved_at': datetime.now().isoformat()
+            }
+            
+            # 先备份当前状态文件
+            if os.path.exists(self.state_file):
+                import shutil
+                shutil.copy2(self.state_file, self.backup_state_file)
+            
+            # 保存新状态
+            with open(self.state_file, 'w', encoding='utf-8') as f:
+                json.dump(state, f, ensure_ascii=False, indent=2)
+            
+            self.logger.debug(f"状态已保存: base_price={self.base_price}, grid_size={self.grid_size}")
+        except Exception as e:
+            self.logger.error(f"保存状态失败: {str(e)}")
+
+    def load_state(self):
+        """从文件加载状态"""
+        try:
+            if os.path.exists(self.state_file):
+                with open(self.state_file, 'r', encoding='utf-8') as f:
+                    state = json.load(f)
+                
+                # 优先使用保存的基准价格（持久化状态优先于配置）
+                saved_base_price = state.get('base_price')
+                if saved_base_price and saved_base_price > 0:
+                    self.base_price = saved_base_price
+                    self.logger.info(f"恢复保存的基准价格: {self.base_price}")
+                elif self.config.INITIAL_BASE_PRICE > 0:
+                    # 如果没有保存的基准价格，才使用环境变量配置
+                    self.base_price = self.config.INITIAL_BASE_PRICE
+                    self.logger.info(f"使用环境变量配置的基准价格: {self.base_price}")
+                
+                # 恢复其他状态
+                saved_grid_size = state.get('grid_size')
+                if saved_grid_size and saved_grid_size > 0:
+                    self.grid_size = saved_grid_size
+                
+                self.last_trade_time = state.get('last_trade_time')
+                self.last_trade_price = state.get('last_trade_price')
+                self.highest = state.get('highest')
+                self.lowest = state.get('lowest')
+                self.last_grid_adjust_time = state.get('last_grid_adjust_time', time.time())
+                self.total_assets = state.get('total_assets', 0)
+                self.price_history = state.get('price_history', [])
+                
+                saved_at = state.get('saved_at', '未知')
+                self.logger.info(f"状态恢复完成 | 保存时间: {saved_at}")
+            else:
+                self.logger.info("未找到状态文件，将使用默认配置")
+                # 如果没有状态文件，使用环境变量配置
+                if self.config.INITIAL_BASE_PRICE > 0:
+                    self.base_price = self.config.INITIAL_BASE_PRICE
+        except Exception as e:
+            self.logger.error(f"加载状态失败: {str(e)}")
+            # 如果加载失败，使用默认配置
+            if self.config.INITIAL_BASE_PRICE > 0:
+                self.base_price = self.config.INITIAL_BASE_PRICE
 
     async def initialize(self):
         if self.initialized:
@@ -129,6 +214,10 @@ class GridTrader:
 
             # 启动时合并最近成交，不覆盖本地历史
             await self._sync_recent_trades(limit=50)
+            
+            # 保存初始状态
+            self.save_state()
+            
             self.initialized = True
         except Exception as e:
             self.initialized = False
@@ -462,6 +551,11 @@ class GridTrader:
                                 f"时间到了，准备调整网格大小 (间隔: {dynamic_interval_seconds / 3600} 小时).")
                             await self.adjust_grid_size()
                             self.last_grid_adjust_time = time.time()
+                        
+                        # 定期保存状态（每10分钟保存一次）
+                        if time.time() - getattr(self, '_last_state_save', 0) > 600:  # 10分钟
+                            self.save_state()
+                            self._last_state_save = time.time()
 
                 await asyncio.sleep(5)
 
@@ -613,6 +707,9 @@ class GridTrader:
 
         # 6) 将多余资金转入理财
         await self._transfer_excess_funds()
+        
+        # 7) 保存状态
+        self.save_state()
 
         return order_dict
 
@@ -966,6 +1063,8 @@ class GridTrader:
                     f"新网格: {new_grid:.2f}%"
                 )
                 self.grid_size = new_grid
+                # 保存状态
+                self.save_state()
 
         except Exception as e:
             self.logger.error(f"调整网格大小失败: {str(e)}")
