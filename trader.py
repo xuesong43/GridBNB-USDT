@@ -352,12 +352,12 @@ class GridTrader:
                 if not await self.check_buy_balance(current_price):
                     return False
                 return True
-        # elif self.buying_or_selling and self.highest is None:
-        #     # 价格回到下轨之上，但我们仍在买入监测模式（说明没有进入卖出监测），重置
-        #     self.buying_or_selling = False
-        #     self._reset_extremes()
-            else:
-                self.buying_or_selling = False    # 退出买入或卖出监测
+        elif current_price > initial_lower_band:
+            # 价格回到下轨之上，退出监测模式
+            if self.buying_or_selling:
+                self.buying_or_selling = False
+                self._reset_extremes()
+                self.logger.debug("价格回到下轨之上，退出买入监测模式")
         return False
 
     async def _check_sell_signal(self):
@@ -420,12 +420,12 @@ class GridTrader:
                 if not await self.check_sell_balance():
                     return False
                 return True
-        # elif self.buying_or_selling and self.lowest is None:
-        #     # 价格回到上轨之下，但我们仍在卖出监测模式（说明没有进入买入监测），重置
-        #     self.buying_or_selling = False
-        #     self._reset_extremes()
-            else:
-                self.buying_or_selling = False    # 退出买入或卖出监测
+        elif current_price < initial_upper_band:
+            # 价格回到上轨之下，退出监测模式
+            if self.buying_or_selling:
+                self.buying_or_selling = False
+                self._reset_extremes()
+                self.logger.debug("价格回到上轨之下，退出卖出监测模式")
         return False
 
     async def _calculate_order_amount(self, order_type):
