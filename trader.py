@@ -1598,6 +1598,21 @@ class GridTrader:
 
             # 计算需要赎回的金额（增加5%缓冲）
             needed_amount = (amount_usdt - spot_usdt) * 1.05
+            
+            # 检查理财账户是否有足够的余额来赎回
+            if needed_amount > funding_usdt:
+                self.logger.warning(f"需要赎回 {needed_amount:.2f} USDT，但理财账户只有 {funding_usdt:.2f} USDT")
+                # 如果理财账户余额不足，尝试赎回全部可用余额
+                if funding_usdt > 0:
+                    needed_amount = funding_usdt
+                    self.logger.info(f"调整为赎回全部可用余额: {needed_amount:.2f} USDT")
+                else:
+                    error_msg = f"资金不足通知\\n交易类型: 买入\\n所需USDT: {amount_usdt:.2f}\\n" \
+                                f"现货余额: {spot_usdt:.2f}\\n理财余额: {funding_usdt:.2f}\\n" \
+                                f"无法从理财账户赎回任何USDT"
+                    self.logger.error(f"买入资金不足: 理财账户USDT余额为0")
+                    send_pushplus_message(error_msg, "资金不足警告")
+                    return False
 
             # 从理财赎回
             self.logger.info(f"从理财赎回 {needed_amount:.2f} USDT")
@@ -1621,9 +1636,18 @@ class GridTrader:
             if new_usdt >= amount_usdt:
                 return True
             else:
-                error_msg = f"资金赎回后仍不足\\n交易类型: 买入\\n所需USDT: {amount_usdt:.2f}\\n现货余额: {new_usdt:.2f}"
-                self.logger.error(error_msg)
-                send_pushplus_message(error_msg, "资金不足警告")
+                # 如果赎回后仍然不足，检查是否是因为理财账户余额不足导致的
+                if funding_usdt > 0 and needed_amount == funding_usdt:
+                    error_msg = f"资金不足通知\\n交易类型: 买入\\n所需USDT: {amount_usdt:.2f}\\n" \
+                                f"现货余额: {new_usdt:.2f}\\n" \
+                                f"已赎回全部理财余额: {funding_usdt:.2f} USDT\\n" \
+                                f"总资金仍不足，无法执行交易"
+                    self.logger.error(f"买入资金不足: 即使赎回全部理财余额后仍不足")
+                    send_pushplus_message(error_msg, "资金不足警告")
+                else:
+                    error_msg = f"资金赎回后仍不足\\n交易类型: 买入\\n所需USDT: {amount_usdt:.2f}\\n现货余额: {new_usdt:.2f}"
+                    self.logger.error(error_msg)
+                    send_pushplus_message(error_msg, "资金不足警告")
                 return False
 
         except Exception as e:
@@ -1677,6 +1701,21 @@ class GridTrader:
 
             # 计算需要赎回的金额（增加5%缓冲）
             needed_amount = (bnb_needed - spot_bnb) * 1.05
+            
+            # 检查理财账户是否有足够的余额来赎回
+            if needed_amount > funding_bnb:
+                self.logger.warning(f"需要赎回 {needed_amount:.8f} BNB，但理财账户只有 {funding_bnb:.8f} BNB")
+                # 如果理财账户余额不足，尝试赎回全部可用余额
+                if funding_bnb > 0:
+                    needed_amount = funding_bnb
+                    self.logger.info(f"调整为赎回全部可用余额: {needed_amount:.8f} BNB")
+                else:
+                    error_msg = f"资金不足通知\\n交易类型: 卖出\\n所需BNB: {bnb_needed:.8f}\\n" \
+                                f"现货余额: {spot_bnb:.8f}\\n理财余额: {funding_bnb:.8f}\\n" \
+                                f"无法从理财账户赎回任何BNB"
+                    self.logger.error(f"卖出资金不足: 理财账户BNB余额为0")
+                    send_pushplus_message(error_msg, "资金不足警告")
+                    return False
 
             # 从理财赎回
             self.logger.info(f"从理财赎回 {needed_amount:.8f} BNB")
@@ -1700,9 +1739,18 @@ class GridTrader:
             if new_bnb >= bnb_needed:
                 return True
             else:
-                error_msg = f"资金赎回后仍不足\\n交易类型: 卖出\\n所需BNB: {bnb_needed:.8f}\\n现货余额: {new_bnb:.8f}"
-                self.logger.error(error_msg)
-                send_pushplus_message(error_msg, "资金不足警告")
+                # 如果赎回后仍然不足，检查是否是因为理财账户余额不足导致的
+                if funding_bnb > 0 and needed_amount == funding_bnb:
+                    error_msg = f"资金不足通知\\n交易类型: 卖出\\n所需BNB: {bnb_needed:.8f}\\n" \
+                                f"现货余额: {new_bnb:.8f}\\n" \
+                                f"已赎回全部理财余额: {funding_bnb:.8f} BNB\\n" \
+                                f"总资金仍不足，无法执行交易"
+                    self.logger.error(f"卖出资金不足: 即使赎回全部理财余额后仍不足")
+                    send_pushplus_message(error_msg, "资金不足警告")
+                else:
+                    error_msg = f"资金赎回后仍不足\\n交易类型: 卖出\\n所需BNB: {bnb_needed:.8f}\\n现货余额: {new_bnb:.8f}"
+                    self.logger.error(error_msg)
+                    send_pushplus_message(error_msg, "资金不足警告")
                 return False
 
         except Exception as e:
