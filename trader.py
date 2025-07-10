@@ -1,3 +1,4 @@
+import os
 from config import TradingConfig, FLIP_THRESHOLD, SAFETY_MARGIN, COOLDOWN
 from exchange_client import ExchangeClient
 from order_tracker import OrderTracker, OrderThrottler
